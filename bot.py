@@ -244,7 +244,7 @@ async def send_next_idiom(message, chat_id):
             game['current_idiom'] = idiom  # Save current idiom
             game['used_srno'].append(srno)  # Add the idiom's srno to the used list
 
-            caption = f"*Idiom*: {idiom}\n*Meaning*: {meaning}\n*Example*: {example}\n\nMake a sentence using this idiom"
+            caption = f"*Idiom*: {idiom}\n>*Meaning*: {meaning}\n*Example*: {example}\n\nMake a sentence using this idiom"
 
             if img_file_path and os.path.isfile(img_file_path):  # Check if the image file exists
                 await message.reply_photo(photo=open(img_file_path, 'rb'), caption=caption, parse_mode='MarkdownV2')
