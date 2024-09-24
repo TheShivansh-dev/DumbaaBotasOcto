@@ -9,10 +9,10 @@ from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQu
 import openpyxl
 
 # Your bot token and username
-#TOKEN: Final = '7867149104:AAEHVuUah67WSzhDd24VPTK6ou0aq-xHvFM'
-#BOT_USERNAME: Final = '@IdiomsUp_bot'
-TOKEN: Final = '6991746723:AAEGi-DzARSPgm0F2IJ-y8wKzxp_4PhtmLc'
-BOT_USERNAME: Final = '@Aradhya0404_Bot'
+TOKEN: Final = '7867149104:AAEHVuUah67WSzhDd24VPTK6ou0aq-xHvFM'
+BOT_USERNAME: Final = '@IdiomsUp_bot'
+#TOKEN: Final = '6991746723:AAEGi-DzARSPgm0F2IJ-y8wKzxp_4PhtmLc'
+#BOT_USERNAME: Final = '@Aradhya0404_Bot'
 IDIOMS_FILE = 'idioms.txt'
 EXCEL_FILE = 'user_scores.xlsx'
 IDIOMS_EXCEL_FILE = 'idioms_data.xlsx'  # Path to the Excel file containing idiom data
