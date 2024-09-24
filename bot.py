@@ -9,10 +9,10 @@ from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQu
 import openpyxl
 
 # Your bot token and username
-TOKEN: Final = '7867149104:AAEHVuUah67WSzhDd24VPTK6ou0aq-xHvFM'
-BOT_USERNAME: Final = '@IdiomsUp_bot'
-#TOKEN: Final = '6991746723:AAEGi-DzARSPgm0F2IJ-y8wKzxp_4PhtmLc'
-#BOT_USERNAME: Final = '@Aradhya0404_Bot'
+#TOKEN: Final = '7867149104:AAEHVuUah67WSzhDd24VPTK6ou0aq-xHvFM'
+#BOT_USERNAME: Final = '@IdiomsUp_bot'
+TOKEN: Final = '6991746723:AAEGi-DzARSPgm0F2IJ-y8wKzxp_4PhtmLc'
+BOT_USERNAME: Final = '@Aradhya0404_Bot'
 IDIOMS_FILE = 'idioms.txt'
 EXCEL_FILE = 'user_scores.xlsx'
 IDIOMS_EXCEL_FILE = 'idioms_data.xlsx'  # Path to the Excel file containing idiom data
@@ -35,6 +35,7 @@ async def show_all_results(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Build the message to display all users
     message = "*All Users and Scores:*\n"
     for user_id, username, score in scores:
+
         message += f"ID: {user_id}, Username: {username}, Score: {score} points\n"
 
     await update.message.reply_text(message, parse_mode='MarkdownV2')
@@ -185,6 +186,22 @@ async def start_idiom_game_command(update: Update, context: ContextTypes.DEFAULT
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text('How many idioms do you want?', reply_markup=reply_markup)
+
+async def cancel_idiom_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.message.chat.id
+
+    # Check if there is an ongoing idiom game in this chat
+    if chat_id in idiom_game_state:
+        # Show the game results before canceling
+        await show_game_results(update.message, chat_id)
+        
+        # Clear the game state for this chat
+        del idiom_game_state[chat_id]
+
+        await update.message.reply_text("The idiom game has been canceled. You can start a new game with /startidiom.")
+    else:
+        await update.message.reply_text("There is no idiom game currently running in this chat.")
+
 
 def is_similar_idiom_in_message(user_text: str, idiom: str, threshold: float = 0.7) -> bool:
     """
@@ -352,6 +369,8 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler('myrank', my_rank_in_idiom))
     app.add_handler(CommandHandler('showallresult', show_all_results))
     app.add_handler(CommandHandler('startidiom', start_idiom_game_command))
+    app.add_handler(CommandHandler('cancelcommand', cancel_idiom_game))
+
     app.add_handler(CallbackQueryHandler(button_callback))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.add_error_handler(error)
