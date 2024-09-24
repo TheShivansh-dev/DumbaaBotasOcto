@@ -9,8 +9,10 @@ from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQu
 import openpyxl
 
 # Your bot token and username
-TOKEN: Final = '7867149104:AAEHVuUah67WSzhDd24VPTK6ou0aq-xHvFM'
-BOT_USERNAME: Final = '@IdiomsUp_bot'
+#TOKEN: Final = '7867149104:AAEHVuUah67WSzhDd24VPTK6ou0aq-xHvFM'
+#BOT_USERNAME: Final = '@IdiomsUp_bot'
+TOKEN: Final = '6991746723:AAEGi-DzARSPgm0F2IJ-y8wKzxp_4PhtmLc'
+BOT_USERNAME: Final = '@Aradhya0404_Bot'
 IDIOMS_FILE = 'idioms.txt'
 EXCEL_FILE = 'user_scores.xlsx'
 IDIOMS_EXCEL_FILE = 'idioms_data.xlsx'  # Path to the Excel file containing idiom data
@@ -170,6 +172,11 @@ def get_random_idiom_from_excel(file_path: str, used_srno: list):
 
 # Start the idiom game and ask how many idioms
 async def start_idiom_game_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.message.chat.id
+
+    if chat_id in idiom_game_state:
+        await update.message.reply_text("An idiom game is already running in this group.")
+        return
     keyboard = [
         [InlineKeyboardButton("5 Idioms", callback_data='5')],
         [InlineKeyboardButton("10 Idioms", callback_data='10')],
@@ -214,7 +221,13 @@ def is_similar_idiom_in_message(user_text: str, idiom: str, threshold: float = 0
 async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
+    
+    chat_id = query.message.chat.id
 
+    if chat_id in idiom_game_state:
+        await query.message.reply_text("An idiom game is already running in this group.")
+        return
+    
     number_of_idioms = int(query.data)
     chat_id = query.message.chat.id
 
@@ -262,17 +275,21 @@ async def send_next_idiom(message, chat_id):
 async def show_game_results(message, chat_id):
     game = idiom_game_state[chat_id]
 
-    # Sort players by score in descending order
-    sorted_players = sorted(game['players'].items(), key=lambda x: x[1]['score'], reverse=True)
+    # Sort players by score in descending order and filter out players with a score of 0
+    sorted_players = [(user_id, player) for user_id, player in sorted(game['players'].items(), key=lambda x: x[1]['score'], reverse=True) if player['score'] > 0]
 
-    results = "*Game Over Here are the results:*\n"
-    for user_id, player in sorted_players:
-        results += f"@{player['username']} :: {player['score']} \n"
+    if sorted_players:
+        results = "*Game Over Here are the results:*\n"
+        for user_id, player in sorted_players:
+            results += f"@{player['username']} :: {player['score']} points\n"
 
-    await message.reply_text(results, parse_mode='MarkdownV2')
+        await message.reply_text(results, parse_mode='MarkdownV2')
+    else:
+        await message.reply_text("No participants scored in this game.")
 
     # Clear the game state
     del idiom_game_state[chat_id]
+
 
 # Handle the user's message and check if it contains the idiom
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
