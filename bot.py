@@ -181,10 +181,10 @@ async def start_game_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
         await update.message.reply_text("A game is already running in this group.")
         return
     keyboard = [
-        [InlineKeyboardButton("25 Words", callback_data='5')],
-        [InlineKeyboardButton("100 Words", callback_data='10')],
-        [InlineKeyboardButton("250 Words", callback_data='15')],
-        [InlineKeyboardButton("500 Words", callback_data='20')],
+        [InlineKeyboardButton("25 Words", callback_data='25')],
+        [InlineKeyboardButton("100 Words", callback_data='100')],
+        [InlineKeyboardButton("250 Words", callback_data='250')],
+        [InlineKeyboardButton("500 Words", callback_data='500')],
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text('How many words do you want?', reply_markup=reply_markup)
