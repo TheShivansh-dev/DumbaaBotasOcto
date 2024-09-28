@@ -2,27 +2,24 @@ import os
 import random
 import re
 import difflib
-
 from typing import Final
 from telegram import Update, InputFile, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
 import openpyxl
 
-# Your bot token and username
-TOKEN: Final = '7867149104:AAEHVuUah67WSzhDd24VPTK6ou0aq-xHvFM'
-BOT_USERNAME: Final = '@IdiomsUp_bot'
-#TOKEN: Final = '6991746723:AAEGi-DzARSPgm0F2IJ-y8wKzxp_4PhtmLc'
-#BOT_USERNAME: Final = '@Aradhya0404_Bot'
-IDIOMS_FILE = 'idioms.txt'
+# Token and Bot Username
+TOKEN: Final = '7652253001:AAEipGC5Fb0Y04NgbCICb6N1Tm6HcJG4tpA'
+BOT_USERNAME: Final = '@Dumbaa_bot'
 EXCEL_FILE = 'user_scores.xlsx'
-IDIOMS_EXCEL_FILE = 'idioms_data.xlsx'  # Path to the Excel file containing idiom data
+OCTO_EXCEL_FILE = 'octowordexcel.xlsx'  # Path to the Excel file containing octoword data
 
-# Dictionary to keep track of ongoing idiom games
-idiom_game_state = {}
+# Dictionary to keep track of ongoing games
+octo_game_state = {}
 
 # Helper to escape MarkdownV2 characters
 def escape_markdown_v2(text: str) -> str:
     return re.sub(r'([_\*\[\]\(\)~`>#+\-=|{}.!])', r'\\\1', text)
+
 
 # Command to show all user scores
 async def show_all_results(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -35,12 +32,13 @@ async def show_all_results(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Build the message to display all users
     message = "*All Users and Scores:*\n"
     for user_id, username, score in scores:
-
-        message += f"ID: {user_id}, Username: {username}, Score: {score} points\n"
+        message += f"ID: {user_id}, Username: @{escape_markdown(str(username))}, Score: {escape_markdown(str(score))}points\n"
 
     await update.message.reply_text(message, parse_mode='MarkdownV2')
 
-def update_user_score(user_id: int, username: str, score: int):
+
+# Update the user's score in the Excel file
+def update_user_score(user_id: int, username: str, score: float):
     # If the file does not exist, create it with headers
     if not os.path.exists(EXCEL_FILE):
         workbook = openpyxl.Workbook()
@@ -73,6 +71,8 @@ def update_user_score(user_id: int, username: str, score: int):
     workbook.save(EXCEL_FILE)
     workbook.close()
 
+
+# Load all user scores from the Excel file
 def load_scores():
     if not os.path.exists(EXCEL_FILE):
         return []
@@ -92,8 +92,9 @@ def load_scores():
     workbook.close()
     return scores
 
-# Command to show the top 10 idiom users
-async def select_top_10_idiom_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+# Command to show the top 10 users
+async def select_top_10_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
     scores = load_scores()
 
     if not scores:
@@ -107,14 +108,15 @@ async def select_top_10_idiom_users(update: Update, context: ContextTypes.DEFAUL
     top_10 = scores[:10]
 
     # Build the message to display top users
-    message = "*Top 10 Idiom Users:*\n"
+    message = "*Top 10 Users:*\n"
     for idx, (user_id, username, score) in enumerate(top_10, 1):
-        message += f"{idx}: {username} : {score} points\n"
+        message += f"{idx}: @{escape_markdown(str(username))} : {escape_markdown(str(score))} points\n"
 
     await update.message.reply_text(message, parse_mode='MarkdownV2')
 
+
 # Command to show the user's rank and score
-async def my_rank_in_idiom(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def my_rank(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
     username = update.message.from_user.username or update.message.from_user.first_name
 
@@ -138,245 +140,275 @@ async def my_rank_in_idiom(update: Update, context: ContextTypes.DEFAULT_TYPE):
         rank, score = user_rank
         await update.message.reply_text(f"Your rank: {rank}\nYour score: {score}")
     else:
-        await update.message.reply_text("You haven't played the idiom game yet")
-# Function to get a random idiom from the file
-# Function to get a random idiom from the Excel file, avoiding repeats
-def get_random_idiom_from_excel(file_path: str, used_srno: list):
+        await update.message.reply_text("You haven't played the game yet")
+
+
+# Function to get a random word from the Excel file
+def get_random_word_from_excel(file_path: str, used_srno: list):
     try:
         workbook = openpyxl.load_workbook(file_path)
         sheet = workbook.active
 
-        # Collect idioms, meanings, examples, and srno from the Excel file
-        idioms_data = []
+        # Collect words and points from the Excel file
+        words_data = []
         for row in range(2, sheet.max_row + 1):  # Start from the second row to skip headers
             srno = sheet.cell(row=row, column=1).value  # 'srno' is in the first column
-            if srno in used_srno:  # Skip idioms that have already been used
+            if srno in used_srno:  # Skip words that have already been used
                 continue
-            idiom = sheet.cell(row=row, column=2).value  # Assuming idiom is in column 2
-            meaning = sheet.cell(row=row, column=3).value  # Assuming meaning is in column 3
-            example = sheet.cell(row=row, column=4).value  # Assuming example is in column 4
-            image_name = sheet.cell(row=row, column=5).value  # Assuming image name is in column 5
+            word = sheet.cell(row=row, column=2).value  # Assuming word is in column 2
+            point = sheet.cell(row=row, column=3).value  # Assuming points are in column 3
 
-            # Append tuple of srno, idiom, meaning, example, image name
-            idioms_data.append((srno, idiom, meaning, example, image_name))
+            # Append tuple of srno, word, and points
+            words_data.append((srno, word, point))
 
-        # Choose a random idiom from the list of unused idioms
-        if idioms_data:
-            srno, idiom, meaning, example, img = random.choice(idioms_data)
-            img_file_path = f'Image/{img.strip()}.jpg' if img else None
-            return srno, idiom, meaning, example, img_file_path
+        # Choose a random word from the list of unused words
+        if words_data:
+            srno, word, point = random.choice(words_data)
+
+            return srno, word, point
         else:
-            return None, None, None, None, None
+            return None, None, None
 
     except FileNotFoundError:
-        return None, None, None, None, None
+        return None, None, None
 
-# Start the idiom game and ask how many idioms
-async def start_idiom_game_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+# Start the game and ask how many rounds
+async def start_game_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.message.chat.id
 
-    if chat_id in idiom_game_state:
-        await update.message.reply_text("An idiom game is already running in this group.")
+    if chat_id in octo_game_state:
+        await update.message.reply_text("A game is already running in this group.")
         return
     keyboard = [
-        [InlineKeyboardButton("5 Idioms", callback_data='5')],
-        [InlineKeyboardButton("10 Idioms", callback_data='10')],
-        [InlineKeyboardButton("15 Idioms", callback_data='15')],
-        [InlineKeyboardButton("20 Idioms", callback_data='20')],
+        [InlineKeyboardButton("25 Words", callback_data='5')],
+        [InlineKeyboardButton("100 Words", callback_data='10')],
+        [InlineKeyboardButton("250 Words", callback_data='15')],
+        [InlineKeyboardButton("500 Words", callback_data='20')],
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    await update.message.reply_text('How many idioms do you want?', reply_markup=reply_markup)
+    await update.message.reply_text('How many words do you want?', reply_markup=reply_markup)
 
-async def cancel_idiom_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+async def cancel_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.message.chat.id
 
-    # Check if there is an ongoing idiom game in this chat
-    if chat_id in idiom_game_state:
+    # Check if there is an ongoing game in this chat
+    if chat_id in octo_game_state:
         # Show the game results before canceling
         await show_game_results(update.message, chat_id)
-        
+
         # Clear the game state for this chat
-        del idiom_game_state[chat_id]
+        del octo_game_state[chat_id]
 
-        await update.message.reply_text("The idiom game has been canceled. You can start a new game with /startidiom.")
+        await update.message.reply_text("The game has been canceled You can start a new game with /startocto")
     else:
-        await update.message.reply_text("There is no idiom game currently running in this chat.")
+        await update.message.reply_text("There is no game currently running in this chat")
 
 
-def is_similar_idiom_in_message(user_text: str, idiom: str, threshold: float = 0.7) -> bool:
+
+def is_similar_word_in_message(user_text: str, word: str, threshold: float = 0.7) -> bool:
     """
-    Check if the user's text contains the idiom with a similarity above the given threshold
-    and also ensure the user provides at least two other words besides the idiom.
+    Check if the user's text contains the word with a similarity above the given threshold.
+    First, attempt to match the word exactly (ignoring case and spaces). If not an exact match,
+    check for similarity above the threshold.
     """
-    user_words = user_text.lower().split()
+    # Convert both user text and the word to lowercase and strip leading/trailing spaces
+    user_text = user_text.lower().strip()
+    word = word.lower().strip()
 
-    # Split the idiom into words
-    idiom_words = idiom.lower().split()
+    # Check for an exact match
+    if user_text == word:
+        return True
 
-    # Ensure the user's message contains at least two extra words besides the idiom
-    if len(user_words) <= len(idiom_words) + 1:
-        return False  # Not enough extra words
 
-    idiom_length = len(idiom_words)
 
-    # Compare each substring of the user's text with the idiom
-    for i in range(len(user_words) - idiom_length + 1):
-        substring = ' '.join(user_words[i:i + idiom_length])
+async def process_game_round(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Process the user's guess during the octo game round
+    """
+    chat_id = update.message.chat.id
+    message = update.message.text.strip()
+    user_id = update.message.from_user.id
+    username = update.message.from_user.username or update.message.from_user.first_name
 
-        # Calculate the similarity ratio between the substring and the idiom
-        similarity = difflib.SequenceMatcher(None, substring, idiom.lower()).ratio()
-
-        # Return True if the similarity is above the threshold
-        if similarity >= threshold:
-            return True
-
-    # If no similar substring is found, return False
-    return False
-
-# Handle the user's choice of idioms count
-# Handle the user's choice of idioms count
-async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    
-    chat_id = query.message.chat.id
-
-    if chat_id in idiom_game_state:
-        await query.message.reply_text("An idiom game is already running in this group.")
+    if chat_id not in octo_game_state:
         return
-    
-    number_of_idioms = int(query.data)
-    chat_id = query.message.chat.id
 
-    # Initialize game state for the group (chat) if not already done
-    if chat_id not in idiom_game_state:
-        idiom_game_state[chat_id] = {
-            'players': {},
-            'idioms_left': number_of_idioms,
-            'current_idiom': None,
-            'used_srno': []  # Initialize used_srno as an empty list to avoid KeyError
+    game_state = octo_game_state[chat_id]
+    current_word = game_state['current_word']
+    total_rounds = game_state['total_rounds']
+
+    # Initialize players if not already done
+    if 'players' not in game_state:
+        game_state['players'] = {}
+
+    # Initialize the player's data if not present
+    if user_id not in game_state['players']:
+        game_state['players'][user_id] = {
+            'username': username,
+            'current_game_score': 0
         }
 
-    # Send the first idiom
-    await send_next_idiom(query.message, chat_id)
+    # Check if the user's message contains the word
+    if is_similar_word_in_message(message, current_word):
+        # User guessed correctly, award points
+        points = game_state['current_points']
+        game_state['players'][user_id]['current_game_score'] += points  # Update current game score
+        update_user_score(user_id, username, points)
+        await update.message.reply_text(f"Correct! @{username} earned {points} points for guessing the word: {current_word}")
 
-# Send the next idiom to the group
-# Send the next idiom to the group, ensuring no repeats and checking for image existence
-async def send_next_idiom(message, chat_id):
-    game = idiom_game_state[chat_id]
+        # Proceed to the next round
+        game_state['current_round'] += 1
 
-    if game['idioms_left'] > 0:
-        used_srno = game.get('used_srno', [])  # Get the list of used 'srno'
+        # If the game is still ongoing, provide the next word
+        if game_state['current_round'] <= total_rounds:
+            next_srno, next_word, next_points = get_random_word_from_excel(OCTO_EXCEL_FILE, game_state.get('used_srno', []))
 
-        srno, idiom, meaning, example, img_file_path = get_random_idiom_from_excel(IDIOMS_EXCEL_FILE, used_srno)
+            if next_word:
+                game_state.setdefault('used_srno', []).append(next_srno)
+                game_state['current_word'] = next_word
+                game_state['current_points'] = next_points
 
-        if idiom:
-            game['current_idiom'] = idiom  # Save current idiom
-            game['used_srno'].append(srno)  # Add the idiom's srno to the used list
+                # Generate the scrambled word and the masked word
+                scrambled_word = ' '.join(random.sample(next_word, len(next_word)))
+                masked_word = mask_word(next_word)  # Call to the mask_word function
 
-            caption = f"*Idiom*: {idiom}\n>*Meaning*: {meaning}\n*Example*: {example}\n\nMake a sentence using this idiom"
+                # Send the response with both the scrambled word and masked word
+                await update.message.reply_text(
+                    f"👻 Round :  {game_state['current_round']}/{total_rounds}.\n"
+                    f"🎖️ Points: {next_points}\n"
+                    f"📚 Letters:  {scrambled_word}\n"
+                    f"🎲 Guess:  {masked_word}\n"
 
-            if img_file_path and os.path.isfile(img_file_path):  # Check if the image file exists
-                await message.reply_photo(photo=open(img_file_path, 'rb'), caption=caption, parse_mode='MarkdownV2')
+
+                )
             else:
-                # If the image does not exist, just send the text (idiom, meaning, and example)
-                await message.reply_text(caption, parse_mode='MarkdownV2')
+                # If no more words are available, end the game
+                await update.message.reply_text("No more words available. The game is over.")
+                await show_game_results(update.message, chat_id)  # Show results
+                del octo_game_state[chat_id]
+
         else:
-            await message.reply_text("Error fetching idiom or image")
+            # Game is over, show the results
+            await show_game_results(update.message, chat_id)
+            del octo_game_state[chat_id]
     else:
-        # Game finished, show results
-        await show_game_results(message, chat_id)
-
-# Show the results of the game, including all participants
-# Show the results of the game, sorted by score in descending order
-async def show_game_results(message, chat_id):
-    game = idiom_game_state[chat_id]
-
-    # Sort players by score in descending order and filter out players with a score of 0
-    sorted_players = [(user_id, player) for user_id, player in sorted(game['players'].items(), key=lambda x: x[1]['score'], reverse=True) if player['score'] > 0]
-
-    if sorted_players:
-        results = "*Game Over Here are the results:*\n"
-        for user_id, player in sorted_players:
-            results += f"@{player['username']} :: {player['score']} points\n"
-
-        await message.reply_text(results, parse_mode='MarkdownV2')
-    else:
-        await message.reply_text("No participants scored in this game.")
-
-    # Clear the game state
-    del idiom_game_state[chat_id]
-
-
-# Handle the user's message and check if it contains the idiom
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat_id = update.message.chat.id
-    user_id = update.message.from_user.id
-    user_name = update.message.from_user.first_name
-    username = update.message.from_user.username or user_name  # Use username if available, fallback to first name
-
-    # Escape username for MarkdownV2
-    username = escape_markdown_v2(username)
-
-    if chat_id in idiom_game_state and idiom_game_state[chat_id]['current_idiom']:
-        game = idiom_game_state[chat_id]
-        current_idiom = game['current_idiom']
-
-        # Add user to the players list if they haven't participated yet
-        if user_id not in game['players']:
-            game['players'][user_id] = {
-                'username': username,  # Save username
-                'score': 0
-            }
-
-        # Check if the user's message contains a part that matches the idiom with at least 70% similarity
-        if is_similar_idiom_in_message(update.message.text, current_idiom):
-            game['idioms_left'] -= 1
-            game['current_idiom'] = None  # Reset current idiom
-
-            # Update player's score
-            game['players'][user_id]['score'] += 1
-
-            # Store the username, user ID, and updated score in the Excel file
-            update_user_score(user_id, username, game['players'][user_id]['score'])
-
-            # Send the next idiom or show results if game is finished
-            await send_next_idiom(update.message, chat_id)
-        else:
-            # If the message isn't similar enough, don't send a prompt
-            pass
-    else:
-        # Default handling for messages that aren't part of the idiom game
+        # Incorrect guess
         return None
 
-async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text('Hello! Thanks For Chatting With Me, I am YourBot.')
+# Function to mask the word
 
-async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text('No worries, I will assist you with all kinds of help. For more help, contact @YourContactUsername.')
+def mask_word(word: str, min_masked: int = 2) -> str:
+    """Mask the word by replacing some letters with underscores."""
+    if len(word) <= min_masked:
+        return '_' * len(word)  # Return all underscores if the word is too short
 
-async def error(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print(f'Update {update} caused error {context.error}')
+    # Calculate the minimum number of letters that should remain unmasked
+    min_preserved = (len(word)) // 2  # Half of the word length, rounded up for odd lengths
+    # Calculate the maximum number of letters to mask
+    max_to_mask = len(word) - min_preserved
+    # Ensure we mask at least min_masked letters and not more than max_to_mask
+    num_to_mask = random.randint(min_masked, max(max_to_mask, min_masked))
 
+    # Select indices to mask
+    indices_to_mask = random.sample(range(len(word)), num_to_mask)
 
-if __name__ == "__main__":
-    print('Starting bot...')
-    app = Application.builder().token(TOKEN).build()
+    # Create a list of characters from the word
+    masked_word_list = list(word)
 
-    app.add_handler(CommandHandler('start', start_command))
-    app.add_handler(CommandHandler('help', help_command))
-    app.add_handler(CommandHandler('topplayer', select_top_10_idiom_users))
-    app.add_handler(CommandHandler('myrank', my_rank_in_idiom))
-    app.add_handler(CommandHandler('showallresult', show_all_results))
-    app.add_handler(CommandHandler('startidiom', start_idiom_game_command))
-    app.add_handler(CommandHandler('cancelcommand', cancel_idiom_game))
+    # Replace selected indices with underscores
+    for index in indices_to_mask:
+        masked_word_list[index] = '_ '  # Use a single underscore without space
 
-    app.add_handler(CallbackQueryHandler(button_callback))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-    app.add_error_handler(error)
-
-    print('Polling the bot...')
-    app.run_polling(poll_interval=1)
+    # Join the list back into a string
+    return ''.join(masked_word_list)
 
 
+# Callback to handle the number of rounds selection
+async def handle_round_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    chat_id = query.message.chat.id
+    selected_rounds = int(query.data)
 
+    if chat_id in octo_game_state:
+        await query.message.reply_text("A game is already running in this group.")
+        return
+
+    # Initialize the game state for this chat
+    srno, word, points = get_random_word_from_excel(OCTO_EXCEL_FILE, [])
+
+    # Shuffle the word and mask it
+    scrambled_word = ' '.join(random.sample(word, len(word)))
+    masked_word = mask_word(word)  # Call to the mask_word function
+
+    octo_game_state[chat_id] = {
+        'total_rounds': selected_rounds,
+        'current_round': 1,
+        'current_word': word,
+        'current_points': points,
+        'used_srno': [srno],
+        'current_game_score': 0,  # Initialize score for the current game
+    }
+
+    await query.message.reply_text(
+        f"Starting game with {selected_rounds} words.\n"
+        f"👻 Round:   1/{selected_rounds}.\n"
+        f"🎖️ Points:  {points}\n"
+        f"📚 Letters:  {scrambled_word}\n"
+        f"🎲 Guess:  {masked_word}"
+    )
+
+
+def escape_markdown(text):
+    """Escape special characters in the text for MarkdownV2."""
+    if isinstance(text, str):  # Ensure that we're working with a string
+        return text.replace('.', '\\.').replace('_', '\\_').replace('*', '\\*').replace('[', '\\[') \
+                   .replace(']', '\\]').replace('(', '\\(').replace(')', '\\)').replace('~', '\\~') \
+                   .replace('`', '\\`').replace('>', '\\>').replace('#', '\\#').replace('+', '\\+') \
+                   .replace('-', '\\-').replace('=', '\\=').replace('|', '\\|').replace('{', '\\{') \
+                   .replace('}', '\\}').replace('!', '\\!')
+    return str(text)  # Convert non-string types to string
+
+async def show_game_results(message, chat_id):
+    if chat_id not in octo_game_state:
+        await message.reply_text("No game in progress")
+        return
+
+    game_state = octo_game_state[chat_id]
+    players = game_state.get('players', {})
+
+    result_message = "*Game Over*\nScores:\n"
+
+    # Create a sorted list of players based on their current game score in descending order
+    sorted_players = sorted(players.items(), key=lambda item: float(item[1]['current_game_score']), reverse=True)
+
+    # Iterate over sorted players and their scores
+    for user_id, player_data in sorted_players:
+        player_score = player_data['current_game_score']
+        username = escape_markdown(player_data.get('username', 'Unknown User'))  # Handle missing username
+        result_message += f"@{username} Score: {escape_markdown(str(player_score))} points\n"  # Escape score
+
+    await message.reply_text(result_message, parse_mode='MarkdownV2')
+
+# Main function to run the bot
+def main():
+    # Create the application
+    application = Application.builder().token(TOKEN).build()
+
+    # Register handlers
+    application.add_handler(CommandHandler('startdumba', start_game_command))
+    application.add_handler(CallbackQueryHandler(handle_round_selection))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, process_game_round))
+    application.add_handler(CommandHandler('cancel', cancel_game))
+    application.add_handler(CommandHandler('showallresults', show_all_results))
+    application.add_handler(CommandHandler('myrank', my_rank))
+    application.add_handler(CommandHandler('top10dumb', select_top_10_users))
+
+    # Start the bot
+    application.run_polling()
+
+
+if __name__ == '__main__':
+    main()
