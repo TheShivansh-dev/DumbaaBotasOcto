@@ -3,12 +3,14 @@ import random
 import re
 import difflib
 from typing import Final
+
+import telegram
 from telegram import Update, InputFile, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
 import openpyxl
 
 # Token and Bot Username
-TOKEN: Final = '7652253001:AAEipGC5Fb0Y04NgbCICb6N1Tm6HcJG4tpA'
+TOKEN: Final = '7007935023:AAENkGaklw6LMJA_sfhVZhnoAgIjW4lDTBc'
 BOT_USERNAME: Final = '@Dumbaa_bot'
 EXCEL_FILE = 'user_scores.xlsx'
 OCTO_EXCEL_FILE = 'octowordexcel.xlsx'  # Path to the Excel file containing octoword data
@@ -32,7 +34,8 @@ async def show_all_results(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Build the message to display all users
     message = "*All Users and Scores:*\n"
     for user_id, username, score in scores:
-        message += f"ID: {user_id}, Username: @{escape_markdown(str(username))}, Score: {escape_markdown(str(score))}points\n"
+        formatted_score = f"{score:.2f}"
+        message += f"ID: {user_id}, Username: @{escape_markdown(str(username))}, Score: {escape_markdown(str(formatted_score))}points\n"
 
     await update.message.reply_text(message, parse_mode='MarkdownV2')
 
@@ -110,7 +113,8 @@ async def select_top_10_users(update: Update, context: ContextTypes.DEFAULT_TYPE
     # Build the message to display top users
     message = "*Top 10 Users:*\n"
     for idx, (user_id, username, score) in enumerate(top_10, 1):
-        message += f"{idx}: @{escape_markdown(str(username))} : {escape_markdown(str(score))} points\n"
+        formatted_score = f"{score:.2f}"
+        message += f"{idx}: @{escape_markdown(str(username))} : {escape_markdown(str(formatted_score))} points\n"
 
     await update.message.reply_text(message, parse_mode='MarkdownV2')
 
@@ -201,7 +205,7 @@ async def cancel_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Clear the game state for this chat
         del octo_game_state[chat_id]
 
-        await update.message.reply_text("The game has been canceled You can start a new game with /startocto")
+        await update.message.reply_text("The game has been canceled You can start a new game with /startdumba")
     else:
         await update.message.reply_text("There is no game currently running in this chat")
 
@@ -224,15 +228,14 @@ def is_similar_word_in_message(user_text: str, word: str, threshold: float = 0.7
 
 
 async def process_game_round(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """
-    Process the user's guess during the octo game round
-    """
+    """Process the user's guess during the octo game round"""
     chat_id = update.message.chat.id
     message = update.message.text.strip()
     user_id = update.message.from_user.id
     username = update.message.from_user.username or update.message.from_user.first_name
 
     if chat_id not in octo_game_state:
+        await update.message.reply_text("No game is currently running. Start a new game with /startdumba")
         return
 
     game_state = octo_game_state[chat_id]
@@ -253,10 +256,16 @@ async def process_game_round(update: Update, context: ContextTypes.DEFAULT_TYPE)
     # Check if the user's message contains the word
     if is_similar_word_in_message(message, current_word):
         # User guessed correctly, award points
-        points = game_state['current_points']
+        points2 = game_state['current_points']
+        points = f"{points2:.2f}"
         game_state['players'][user_id]['current_game_score'] += points  # Update current game score
         update_user_score(user_id, username, points)
-        await update.message.reply_text(f"Correct! @{username} earned {points} points for guessing the word: {current_word}")
+
+        try:
+            await update.message.reply_text(f"Correct! @{username} earned {points} points for guessing the word: {current_word}")
+        except telegram.error.BadRequest:
+            # If replying fails, send a normal message
+            await update.message.chat.send_message(f"Correct! @{username} earned {points} points for guessing the word: {current_word}")
 
         # Proceed to the next round
         game_state['current_round'] += 1
@@ -274,15 +283,21 @@ async def process_game_round(update: Update, context: ContextTypes.DEFAULT_TYPE)
                 scrambled_word = ' '.join(random.sample(next_word, len(next_word)))
                 masked_word = mask_word(next_word)  # Call to the mask_word function
 
-                # Send the response with both the scrambled word and masked word
-                await update.message.reply_text(
-                    f"👻 Round :  {game_state['current_round']}/{total_rounds}.\n"
-                    f"🎖️ Points: {next_points}\n"
-                    f"📚 Letters:  {scrambled_word}\n"
-                    f"🎲 Guess:  {masked_word}\n"
-
-
-                )
+                try:
+                    await update.message.reply_text(
+                        f"👻 Round: {game_state['current_round']}/{total_rounds}.\n"
+                        f"🎖️ Points: {next_points}\n"
+                        f"📚 Letters: {scrambled_word}\n"
+                        f"🎲 Guess: {masked_word}\n"
+                    )
+                except telegram.error.BadRequest:
+                    # If replying fails, send a normal message
+                    await update.message.chat.send_message(
+                        f"👻 Round: {game_state['current_round']}/{total_rounds}.\n"
+                        f"🎖️ Points: {next_points}\n"
+                        f"📚 Letters: {scrambled_word}\n"
+                        f"🎲 Guess: {masked_word}\n"
+                    )
             else:
                 # If no more words are available, end the game
                 await update.message.reply_text("No more words available. The game is over.")
@@ -384,13 +399,27 @@ async def show_game_results(message, chat_id):
     # Create a sorted list of players based on their current game score in descending order
     sorted_players = sorted(players.items(), key=lambda item: float(item[1]['current_game_score']), reverse=True)
 
+    # Track if any valid scores are found
+    has_valid_scores = False
+
     # Iterate over sorted players and their scores
     for user_id, player_data in sorted_players:
         player_score = player_data['current_game_score']
-        username = escape_markdown(player_data.get('username', 'Unknown User'))  # Handle missing username
-        result_message += f"@{username} Score: {escape_markdown(str(player_score))} points\n"  # Escape score
+        if player_score >= 1:  # Only show scores of 1 or more
+            formatted_score = f"{player_score:.2f}"
+            username = escape_markdown(player_data.get('username', 'Unknown User'))  # Handle missing username
+            result_message += f"@{username} Score: {escape_markdown(str(formatted_score))} points\n"  # Escape score
+            has_valid_scores = True  # Found at least one valid score
 
-    await message.reply_text(result_message, parse_mode='MarkdownV2')
+    if has_valid_scores:
+        try:
+            await message.reply_text(result_message, parse_mode='MarkdownV2')
+        except telegram.error.BadRequest:
+            # If the message cannot be replied to, send a normal message
+            await message.chat.send_message(result_message, parse_mode='MarkdownV2')
+    else:
+        return None
+
 
 # Main function to run the bot
 def main():
