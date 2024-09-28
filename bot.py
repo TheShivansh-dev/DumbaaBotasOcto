@@ -10,7 +10,7 @@ from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQu
 import openpyxl
 
 # Token and Bot Username
-TOKEN: Final = '7007935023:AAENkGaklw6LMJA_sfhVZhnoAgIjW4lDTBc'
+TOKEN: Final = '8003195166:AAFbYczW94wl6y9mtUMJ5XWROcZGsdkUoj4'
 BOT_USERNAME: Final = '@Dumbaa_bot'
 EXCEL_FILE = 'user_scores.xlsx'
 OCTO_EXCEL_FILE = 'octowordexcel.xlsx'  # Path to the Excel file containing octoword data
