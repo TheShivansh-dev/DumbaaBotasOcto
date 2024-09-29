@@ -453,9 +453,16 @@ async def show_game_results(message, chat_id):
     # Iterate over sorted players and their scores
     for user_id, player_data in sorted_players:
         player_score = player_data['current_game_score']
-        formatted_score = f"{player_score:.2f}"
-        username = escape_markdown(player_data.get('username', 'Unknown User'))  # Handle missing username
-        result_message += f"@{username} Score: {escape_markdown(str(formatted_score))} points\n"  # Escape score
+
+        # Only show results for players with a score of 1 or more
+        if player_score >= 1:
+            formatted_score = f"{player_score:.2f}"
+            username = escape_markdown(player_data.get('username', 'Unknown User'))  # Handle missing username
+            result_message += f"@{username} Score: {escape_markdown(str(formatted_score))} points\n"  # Escape score
+
+    if result_message == "*Game Over*\nScores:\n":
+        result_message = "No players with a score of 1 or more."
+
     try:
         await message.reply_text(result_message, parse_mode='MarkdownV2')
     except telegram.error.BadRequest:
@@ -473,7 +480,7 @@ def main():
     application.add_handler(CommandHandler('cancel', cancel_game))
     application.add_handler(CommandHandler('showallresults', show_all_results))
     application.add_handler(CommandHandler('myrank', my_rank))
-    application.add_handler(CommandHandler('top10player', select_top_10_users))
+    application.add_handler(CommandHandler('top10dumb', select_top_10_users))
 
     # Start the bot
     application.run_polling()

@@ -10,8 +10,8 @@ from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQu
 import openpyxl
 
 # Token and Bot Username
-TOKEN: Final = '7652253001:AAEipGC5Fb0Y04NgbCICb6N1Tm6HcJG4tpA'
-BOT_USERNAME: Final = '@Dumbaa_bot'
+TOKEN: Final = '7007935023:AAENkGaklw6LMJA_sfhVZhnoAgIjW4lDTBc'
+BOT_USERNAME: Final = '@Grovieee_bot'
 EXCEL_FILE = 'user_scores.xlsx'
 OCTO_EXCEL_FILE = 'octowordexcel.xlsx'  # Path to the Excel file containing octoword data
 
@@ -434,6 +434,7 @@ def escape_markdown(text):
                    .replace('}', '\\}').replace('!', '\\!')
     return str(text)  # Convert non-string types to string
 
+
 async def show_game_results(message, chat_id):
     if chat_id not in octo_game_state:
         try:
@@ -453,13 +454,21 @@ async def show_game_results(message, chat_id):
     # Iterate over sorted players and their scores
     for user_id, player_data in sorted_players:
         player_score = player_data['current_game_score']
-        formatted_score = f"{player_score:.2f}"
-        username = escape_markdown(player_data.get('username', 'Unknown User'))  # Handle missing username
-        result_message += f"@{username} Score: {escape_markdown(str(formatted_score))} points\n"  # Escape score
+
+        # Only show results for players with a score of 1 or more
+        if player_score >= 1:
+            formatted_score = f"{player_score:.2f}"
+            username = escape_markdown(player_data.get('username', 'Unknown User'))  # Handle missing username
+            result_message += f"@{username} Score: {escape_markdown(str(formatted_score))} points\n"  # Escape score
+
+    if result_message == "*Game Over*\nScores:\n":
+        result_message = "No players with a score of 1 or more."
+
     try:
         await message.reply_text(result_message, parse_mode='MarkdownV2')
     except telegram.error.BadRequest:
         await message.chat.send_message(result_message, parse_mode='MarkdownV2')
+
 
 # Main function to run the bot
 def main():
@@ -473,7 +482,7 @@ def main():
     application.add_handler(CommandHandler('cancel', cancel_game))
     application.add_handler(CommandHandler('showallresults', show_all_results))
     application.add_handler(CommandHandler('myrank', my_rank))
-    application.add_handler(CommandHandler('top10player', select_top_10_users))
+    application.add_handler(CommandHandler('top10dumb', select_top_10_users))
 
     # Start the bot
     application.run_polling()
