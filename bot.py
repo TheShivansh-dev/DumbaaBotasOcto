@@ -197,8 +197,20 @@ def get_random_word_from_excel(file_path: str, used_srno: list):
 
 
 # Start the game and ask how many rounds
+# Define the list of allowed chat IDs
+# Define the list of allowed group IDs
+ALLOWED_GROUP_IDS = [-1001817635995]  # Replace with the actual group IDs (Note: Group IDs are usually negative)
+
 async def start_game_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.message.chat.id
+
+    # Check if the chat_id (group ID) is in the allowed list
+    if chat_id not in ALLOWED_GROUP_IDS:
+        try:
+            await update.message.reply_text("due to the free service You are not allowed to start a game in this group. play there @iesp_0404 or contact @O000000000O00000000O")
+        except telegram.error.BadRequest:
+            await update.message.chat.send_message("due to the free service You are not allowed to start a game in this group. play there @iesp_0404 or contact @O000000000O00000000O")
+        return
 
     if chat_id in octo_game_state:
         try:
@@ -206,6 +218,7 @@ async def start_game_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
         except telegram.error.BadRequest:
             await update.message.chat.send_message("A game is already running in this group.")
         return
+
     keyboard = [
         [InlineKeyboardButton("25 Words", callback_data='25')],
         [InlineKeyboardButton("100 Words", callback_data='100')],
