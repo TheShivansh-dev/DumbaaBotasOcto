@@ -1,20 +1,24 @@
+# Token and Bot Username
+#TOKEN: Final = '7652253001:AAEipGC5Fb0Y04NgbCICb6N1Tm6HcJG4tpA'
+#BOT_USERNAME: Final = '@Dumbaa_bot'
+#TOKEN: Final = '7007935023:AAENkGaklw6LMJA_sfhVZhnoAgIjW4lDTBc'
+#BOT_USERNAME: Final = '@Grovieee_bot'
+#ALLOWED_GROUP_IDS = [-1001817635995, -1002114430690]
 import os
 import random
 import re
 import difflib
 from typing import Final
-
 import telegram
 from telegram import Update, InputFile, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
 import openpyxl
 
-# Token and Bot Username
+EXCEL_FILE = 'user_scores.xlsx'
+
 TOKEN: Final = '7652253001:AAEipGC5Fb0Y04NgbCICb6N1Tm6HcJG4tpA'
 BOT_USERNAME: Final = '@Dumbaa_bot'
-EXCEL_FILE = 'user_scores.xlsx'
-OCTO_EXCEL_FILE = 'octowordexcel.xlsx'  # Path to the Excel file containing octoword data
-
+ALLOWED_GROUP_IDS = [-1001817635995, -1002114430690]
 # Dictionary to keep track of ongoing games
 octo_game_state = {}
 
@@ -157,7 +161,7 @@ async def my_rank(update: Update, context: ContextTypes.DEFAULT_TYPE):
         formatted_score = f"{score:.2f}"
         try:
             await update.message.reply_text(f"Your rank: {rank}\nYour score: {formatted_score}")
-        except:
+        except telegram.error.BadRequest:
             await update.message.chat.send_message(f"Your rank: {rank}\nYour score: {formatted_score}")
     else:
         try:
@@ -199,7 +203,7 @@ def get_random_word_from_excel(file_path: str, used_srno: list):
 # Start the game and ask how many rounds
 # Define the list of allowed chat IDs
 # Define the list of allowed group IDs
-ALLOWED_GROUP_IDS = [-1001817635995]  # Replace with the actual group IDs (Note: Group IDs are usually negative)
+ # Replace with the actual group IDs (Note: Group IDs are usually negative)
 
 async def start_game_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.message.chat.id
@@ -207,9 +211,9 @@ async def start_game_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
     # Check if the chat_id (group ID) is in the allowed list
     if chat_id not in ALLOWED_GROUP_IDS:
         try:
-            await update.message.reply_text("due to the free service You are not allowed to start a game in this group. play there @iesp_0404 or contact @O000000000O00000000O")
+            await update.message.reply_text("Due to the free service, you are not allowed to start a game in this group. Play there @iesp_0404 or contact @O000000000O00000000O")
         except telegram.error.BadRequest:
-            await update.message.chat.send_message("due to the free service You are not allowed to start a game in this group. play there @iesp_0404 or contact @O000000000O00000000O")
+            await update.message.chat.send_message("Due to the free service, you are not allowed to start a game in this group. Play there @iesp_0404 or contact @O000000000O00000000O")
         return
 
     if chat_id in octo_game_state:
@@ -219,6 +223,41 @@ async def start_game_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
             await update.message.chat.send_message("A game is already running in this group.")
         return
 
+    # Present difficulty selection buttons: Easy or Hard
+    difficulty_keyboard = [
+        [InlineKeyboardButton("Easy 😄", callback_data='difficulty_easy')],
+        [InlineKeyboardButton("Hard 😓", callback_data='difficulty_hard')],
+    ]
+    reply_markup = InlineKeyboardMarkup(difficulty_keyboard)
+
+    try:
+        await update.message.reply_text('Select the difficulty:', reply_markup=reply_markup)
+    except telegram.error.BadRequest:
+        await update.message.chat.send_message('Select the difficulty:', reply_markup=reply_markup)
+
+# This function handles the difficulty selection and prompts for word count
+async def handle_difficulty_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+   
+    await query.answer()
+    chat_id = query.message.chat.id
+    if chat_id in octo_game_state:
+        try:
+            await query.message.reply_text("A game is already running in this group 9")
+        except telegram.error.BadRequest:
+            await query.message.chat.send_message("A game is already running in this group 9")
+        return
+    # Determine difficulty based on callback data
+    global OCTO_EXCEL_FILE
+    difficulty_message = ''
+    if query.data == 'difficulty_easy':
+        OCTO_EXCEL_FILE = 'octowordexcel.xlsx'  # Use the easy file
+        difficulty_message = "Easy mode selected"
+    elif query.data == 'difficulty_hard':
+        OCTO_EXCEL_FILE = 'hardumbaword.xlsx'  # Use the hard file
+        difficulty_message = "Hard mode selected"
+
+    # Ask how many words to play with
     keyboard = [
         [InlineKeyboardButton("25 Words", callback_data='25')],
         [InlineKeyboardButton("100 Words", callback_data='100')],
@@ -226,10 +265,13 @@ async def start_game_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
         [InlineKeyboardButton("500 Words", callback_data='500')],
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
+
+    # Send a confirmation message along with the next prompt
     try:
-        await update.message.reply_text('How many words do you want?', reply_markup=reply_markup)
+        await query.message.reply_text(f"{difficulty_message} How many words do you want", reply_markup=reply_markup)
     except telegram.error.BadRequest:
-        await update.message.chat.send_message('How many words do you want?', reply_markup=reply_markup)
+        await query.message.chat.send_message(f"{difficulty_message} How many words do you want", reply_markup=reply_markup)
+
 
 
 
@@ -306,11 +348,6 @@ async def process_game_round(update: Update, context: ContextTypes.DEFAULT_TYPE)
         game_state['players'][user_id]['current_game_score'] += points  # Update current game score
         update_user_score(user_id, username, points)
         formatted_score = f"{points:.2f}"
-        try:
-            await update.message.reply_text(f"Correct! @{username} earned {points} points for guessing the word: {current_word}")
-        except telegram.error.BadRequest:
-            # If replying fails, send a normal message
-            await update.message.chat.send_message(f"Correct! @{username} earned {points} points for guessing the word: {current_word}")
 
 
         # Proceed to the next round
@@ -329,21 +366,28 @@ async def process_game_round(update: Update, context: ContextTypes.DEFAULT_TYPE)
                 scrambled_word = ' '.join(random.sample(next_word, len(next_word)))
                 masked_word = mask_word(next_word)  # Call to the mask_word function
 
+                pass_button = InlineKeyboardButton(text="Pass 🐛", callback_data="pass")
+                keyboard = InlineKeyboardMarkup([[pass_button]])
+
                 # Send the response with both the scrambled word and masked word
                 try:
                     await update.message.reply_text(
+                        f"@{username} earned {formatted_score} points for: {current_word}\n\n"
                         f"👻 Round: {game_state['current_round']}/{total_rounds}.\n"
                         f"🎖️ Points: {next_points}\n"
                         f"📚 Letters: {scrambled_word}\n"
-                        f"🎲 Guess: {masked_word}\n"
+                        f"🎲 Guess: {masked_word}\n",
+                        reply_markup=keyboard
                     )
                 except telegram.error.BadRequest:
                     # If replying fails, send a normal message
                     await update.message.chat.send_message(
+                        f"Correct! @{username} earned {formatted_score} points for:→ {current_word}\n\n"
                         f"👻 Round: {game_state['current_round']}/{total_rounds}.\n"
                         f"🎖️ Points: {next_points}\n"
                         f"📚 Letters: {scrambled_word}\n"
-                        f"🎲 Guess: {masked_word}\n"
+                        f"🎲 Guess: {masked_word}\n",
+                        reply_markup=keyboard
                     )
             else:
                 # If no more words are available, end the game
@@ -395,23 +439,24 @@ async def handle_round_selection(update: Update, context: ContextTypes.DEFAULT_T
     query = update.callback_query
     await query.answer()
     chat_id = query.message.chat.id
-    selected_rounds = int(query.data)
 
-    if chat_id in octo_game_state:
-        try:
-            await query.message.reply_text("A game is already running in this group.")
-        except telegram.error.BadRequest:
-            await query.message.chat.send_message("A game is already running in this group.")
-        return
+    if query.data.isdigit():
+        selected_rounds = int(query.data)
+        if chat_id in octo_game_state:
+            try:
+                await query.message.reply_text("A game is already running in this group.")
+            except telegram.error.BadRequest:
+                await query.message.chat.send_message("A game is already running in this group.")
+            return
 
-    # Initialize the game state for this chat
-    srno, word, points = get_random_word_from_excel(OCTO_EXCEL_FILE, [])
+        # Initialize the game state for this chat
+        srno, word, points = get_random_word_from_excel(OCTO_EXCEL_FILE, [])
 
-    # Shuffle the word and mask it
-    scrambled_word = ' '.join(random.sample(word, len(word)))
-    masked_word = mask_word(word)  # Call to the mask_word function
+        # Shuffle the word and mask it
+        scrambled_word = ' '.join(random.sample(word, len(word)))
+        masked_word = mask_word(word)  # Call to the mask_word function
 
-    octo_game_state[chat_id] = {
+        octo_game_state[chat_id] = {
         'total_rounds': selected_rounds,
         'current_round': 1,
         'current_word': word,
@@ -419,23 +464,75 @@ async def handle_round_selection(update: Update, context: ContextTypes.DEFAULT_T
         'used_srno': [srno],
         'current_game_score': 0,  # Initialize score for the current game
     }
-    try:
-        await query.message.reply_text(
-        f"Starting game with {selected_rounds} words.\n"
-        f"👻 Round:   1/{selected_rounds}.\n"
-        f"🎖️ Points:  {points}\n"
-        f"📚 Letters:  {scrambled_word}\n"
-        f"🎲 Guess:  {masked_word}"
-        )
-    except telegram.error.BadRequest:
-        await query.message.chat.send_message(
+
+        pass_button = InlineKeyboardButton(text="Pass 🐛", callback_data="pass")
+        keyboard = InlineKeyboardMarkup([[pass_button]])
+
+        try:
+            await query.message.reply_text(
             f"Starting game with {selected_rounds} words.\n"
             f"👻 Round:   1/{selected_rounds}.\n"
             f"🎖️ Points:  {points}\n"
             f"📚 Letters:  {scrambled_word}\n"
-            f"🎲 Guess:  {masked_word}"
-        )
+            f"🎲 Guess:  {masked_word}",
+            reply_markup=keyboard
+            )
+        except telegram.error.BadRequest:
+            await query.message.chat.send_message(
+            f"Starting game with {selected_rounds} words.\n"
+            f"👻 Round:   1/{selected_rounds}.\n"
+            f"🎖️ Points:  {points}\n"
+            f"📚 Letters:  {scrambled_word}\n"
+            f"🎲 Guess:  {masked_word}",
+            reply_markup=keyboard
+            )
+    elif query.data == 'pass':
+        # Handle the pass action
+        await handle_pass_action(query, chat_id)
 
+
+async def handle_pass_action(query, chat_id):
+    user_id = query.from_user.id
+    username = query.from_user.username or query.from_user.first_name
+
+    if chat_id not in octo_game_state:
+        await query.message.reply_text("No active game in this group")
+        return
+
+    game_state = octo_game_state[chat_id]
+    current_word = game_state['current_word']
+
+    # Process passing the current word
+    game_state['current_round'] += 1
+
+    if game_state['current_round'] <= game_state['total_rounds']:
+        next_srno, next_word, next_points = get_random_word_from_excel(OCTO_EXCEL_FILE, game_state.get('used_srno', []))
+
+        if next_word:
+            game_state.setdefault('used_srno', []).append(next_srno)
+            game_state['current_word'] = next_word
+            game_state['current_points'] = next_points
+
+            scrambled_word = ' '.join(random.sample(next_word, len(next_word)))
+            masked_word = mask_word(next_word)
+            pass_button = InlineKeyboardButton(text="Pass 🐛", callback_data="pass")
+            keyboard = InlineKeyboardMarkup([[pass_button]])
+
+            await query.message.reply_text(
+                f" @{username} passed the word: {current_word}\n"
+                f"👻 Round: {game_state['current_round']}/{game_state['total_rounds']}.\n"
+                f"🎖️ Points: {next_points}\n"
+                f"📚 Letters: {scrambled_word}\n"
+                f"🎲 Guess: {masked_word}\n",
+                reply_markup=keyboard
+            )
+        else:
+            await query.message.reply_text("No more words available The game is over")
+            await show_game_results(query.message, chat_id)
+            del octo_game_state[chat_id]
+    else:
+        await show_game_results(query.message, chat_id)
+        del octo_game_state[chat_id]
 
 def escape_markdown(text):
     """Escape special characters in the text for MarkdownV2."""
@@ -474,7 +571,7 @@ async def show_game_results(message, chat_id):
             result_message += f"@{username} Score: {escape_markdown(str(formatted_score))} points\n"  # Escape score
 
     if result_message == "*Game Over*\nScores:\n":
-        result_message = "No players with a score of 1 or more."
+        result_message = "No players with a score of 1 or more"
 
     try:
         await message.reply_text(result_message, parse_mode='MarkdownV2')
@@ -482,18 +579,22 @@ async def show_game_results(message, chat_id):
         await message.chat.send_message(result_message, parse_mode='MarkdownV2')
 
 # Main function to run the bot
+
 def main():
     # Create the application
     application = Application.builder().token(TOKEN).build()
 
     # Register handlers
     application.add_handler(CommandHandler('startdumba', start_game_command))
-    application.add_handler(CallbackQueryHandler(handle_round_selection))
+    application.add_handler(CallbackQueryHandler(handle_difficulty_selection, pattern='^difficulty_'))
+    application.add_handler(CallbackQueryHandler(handle_round_selection, pattern='^pass'))
+    application.add_handler(CallbackQueryHandler(handle_round_selection, pattern='^\d+$'))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, process_game_round))
     application.add_handler(CommandHandler('cancel', cancel_game))
     application.add_handler(CommandHandler('showallresults', show_all_results))
     application.add_handler(CommandHandler('myrank', my_rank))
     application.add_handler(CommandHandler('top10dumb', select_top_10_users))
+
 
     # Start the bot
     application.run_polling()
@@ -501,3 +602,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
