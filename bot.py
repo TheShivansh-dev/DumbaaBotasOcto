@@ -15,19 +15,17 @@ from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQu
 import openpyxl
 
 EXCEL_FILE = 'user_scores.xlsx'
-
 TOKEN: Final = '7652253001:AAEipGC5Fb0Y04NgbCICb6N1Tm6HcJG4tpA'
 BOT_USERNAME: Final = '@Dumbaa_bot'
 ALLOWED_GROUP_IDS = [-1001817635995, -1002114430690]
 # Dictionary to keep track of ongoing games
 octo_game_state = {}
 
+
 # Helper to escape MarkdownV2 characters
 def escape_markdown_v2(text: str) -> str:
     return re.sub(r'([_\*\[\]\(\)~`>#+\-=|{}.!])', r'\\\1', text)
 
-
-# Command to show all user scores
 async def show_all_results(update: Update, context: ContextTypes.DEFAULT_TYPE):
     scores = load_scores()  # Load scores from the Excel file
 
@@ -48,10 +46,9 @@ async def show_all_results(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except telegram.error.BadRequest:
         await update.message.chat.send_message(message, parse_mode='MarkdownV2')
 
-
-# Update the user's score in the Excel file
 def update_user_score(user_id: int, username: str, score: float):
     # If the file does not exist, create it with headers
+
     if not os.path.exists(EXCEL_FILE):
         workbook = openpyxl.Workbook()
         sheet = workbook.active
@@ -83,7 +80,6 @@ def update_user_score(user_id: int, username: str, score: float):
     workbook.save(EXCEL_FILE)
     workbook.close()
 
-
 # Load all user scores from the Excel file
 def load_scores():
     if not os.path.exists(EXCEL_FILE):
@@ -104,21 +100,17 @@ def load_scores():
     workbook.close()
     return scores
 
-
 # Command to show the top 10 users
 async def select_top_10_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
     scores = load_scores()
-
     if not scores:
         try:
             await update.message.reply_text("No scores found")
         except telegram.error.BadRequest:
             await update.message.chat.send_message("No scores found")
         return
-
     # Sort by score in descending order
     scores.sort(key=lambda x: x[2], reverse=True)
-
     # Get the top 10 users
     top_10 = scores[:10]
 
@@ -169,7 +161,6 @@ async def my_rank(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except telegram.error.BadRequest:
             await update.message.chat.send_message("You haven't played the game yet")
 
-
 # Function to get a random word from the Excel file
 def get_random_word_from_excel(file_path: str, used_srno: list):
     try:
@@ -198,12 +189,6 @@ def get_random_word_from_excel(file_path: str, used_srno: list):
 
     except FileNotFoundError:
         return None, None, None
-
-
-# Start the game and ask how many rounds
-# Define the list of allowed chat IDs
-# Define the list of allowed group IDs
- # Replace with the actual group IDs (Note: Group IDs are usually negative)
 
 async def start_game_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.message.chat.id
@@ -235,7 +220,6 @@ async def start_game_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
     except telegram.error.BadRequest:
         await update.message.chat.send_message('Select the difficulty:', reply_markup=reply_markup)
 
-# This function handles the difficulty selection and prompts for word count
 async def handle_difficulty_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
    
@@ -272,9 +256,6 @@ async def handle_difficulty_selection(update: Update, context: ContextTypes.DEFA
     except telegram.error.BadRequest:
         await query.message.chat.send_message(f"{difficulty_message} How many words do you want", reply_markup=reply_markup)
 
-
-
-
 async def cancel_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.message.chat.id
 
@@ -295,9 +276,6 @@ async def cancel_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except telegram.error.BadRequest:
             await update.message.chat.send_message("There is no game currently running in this chat")
 
-
-
-
 def is_similar_word_in_message(user_text: str, word: str, threshold: float = 0.7) -> bool:
     """
     Check if the user's text contains the word with a similarity above the given threshold.
@@ -311,8 +289,6 @@ def is_similar_word_in_message(user_text: str, word: str, threshold: float = 0.7
     # Check for an exact match
     if user_text == word:
         return True
-
-
 
 async def process_game_round(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
@@ -406,8 +382,6 @@ async def process_game_round(update: Update, context: ContextTypes.DEFAULT_TYPE)
         # Incorrect guess
         return None
 
-# Function to mask the word
-
 def mask_word(word: str, min_masked: int = 2) -> str:
     """Mask the word by replacing some letters with underscores."""
     if len(word) <= min_masked:
@@ -433,8 +407,6 @@ def mask_word(word: str, min_masked: int = 2) -> str:
     # Join the list back into a string
     return ''.join(masked_word_list)
 
-
-# Callback to handle the number of rounds selection
 async def handle_round_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -489,7 +461,6 @@ async def handle_round_selection(update: Update, context: ContextTypes.DEFAULT_T
     elif query.data == 'pass':
         # Handle the pass action
         await handle_pass_action(query, chat_id)
-
 
 async def handle_pass_action(query, chat_id):
     user_id = query.from_user.id
@@ -577,8 +548,6 @@ async def show_game_results(message, chat_id):
         await message.reply_text(result_message, parse_mode='MarkdownV2')
     except telegram.error.BadRequest:
         await message.chat.send_message(result_message, parse_mode='MarkdownV2')
-
-# Main function to run the bot
 
 def main():
     # Create the application
