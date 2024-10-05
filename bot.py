@@ -257,6 +257,8 @@ async def handle_difficulty_selection(update: Update, context: ContextTypes.DEFA
         await query.message.chat.send_message(f"{difficulty_message} How many words do you want", reply_markup=reply_markup)
 
 async def cancel_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message is None:
+        return
     chat_id = update.message.chat.id
 
     # Check if there is an ongoing game in this chat
@@ -294,6 +296,9 @@ async def process_game_round(update: Update, context: ContextTypes.DEFAULT_TYPE)
     """
     Process the user's guess during the octo game round
     """
+    if update.message is None:
+        return
+
     chat_id = update.message.chat.id
     message = update.message.text.strip()
     user_id = update.message.from_user.id
@@ -408,6 +413,9 @@ def mask_word(word: str, min_masked: int = 2) -> str:
     return ''.join(masked_word_list)
 
 async def handle_round_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    if update.message is None:
+        return
     query = update.callback_query
     await query.answer()
     chat_id = query.message.chat.id
@@ -463,6 +471,7 @@ async def handle_round_selection(update: Update, context: ContextTypes.DEFAULT_T
         await handle_pass_action(query, chat_id)
 
 async def handle_pass_action(query, chat_id):
+
     user_id = query.from_user.id
     username = query.from_user.username or query.from_user.first_name
 
