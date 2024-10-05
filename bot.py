@@ -257,8 +257,7 @@ async def handle_difficulty_selection(update: Update, context: ContextTypes.DEFA
         await query.message.chat.send_message(f"{difficulty_message} How many words do you want", reply_markup=reply_markup)
 
 async def cancel_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.message is None:
-        return
+
     chat_id = update.message.chat.id
 
     # Check if there is an ongoing game in this chat
@@ -414,8 +413,7 @@ def mask_word(word: str, min_masked: int = 2) -> str:
 
 async def handle_round_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
-    if update.message is None:
-        return
+
     query = update.callback_query
     await query.answer()
     chat_id = query.message.chat.id
