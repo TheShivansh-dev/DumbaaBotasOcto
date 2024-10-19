@@ -13,14 +13,59 @@ import telegram
 from telegram import Update, InputFile, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
 import openpyxl
+import speech_recognition as sr
+from pydub import AudioSegment
+import tempfile
 
 EXCEL_FILE = 'user_scores.xlsx'
-TOKEN: Final = '7652253001:AAEipGC5Fb0Y04NgbCICb6N1Tm6HcJG4tpA'
-BOT_USERNAME: Final = '@Dumbaa_bot'
+TOKEN: Final = '7007935023:AAENkGaklw6LMJA_sfhVZhnoAgIjW4lDTBc'
+BOT_USERNAME: Final = '@Grovieee_bot'
 ALLOWED_GROUP_IDS = [-1001817635995, -1002114430690]
 # Dictionary to keep track of ongoing games
 octo_game_state = {}
 
+def convert_ogg_to_wav(ogg_file_path):
+    audio = AudioSegment.from_ogg(ogg_file_path)
+    wav_file_path = ogg_file_path.replace(".ogg", ".wav")
+    audio.export(wav_file_path, format="wav")
+    return wav_file_path
+
+async def translate_voice_message(update, context):
+    # Check if the /translate command is a reply to a message
+    if not update.message.reply_to_message or not update.message.reply_to_message.voice:
+        await update.message.reply_text("Please reply to a voice message with the /translate command.")
+        return
+
+    # Extract the voice message from the replied message
+    voice = update.message.reply_to_message.voice
+    if voice is None:
+        await update.message.reply_text("No voice message found to translate.")
+        return
+
+    # Save the voice message to a temporary file
+    file = await voice.get_file()
+    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.ogg')
+    await file.download_to_drive(temp_file.name)
+
+    # Convert the OGG file to WAV format
+    wav_file_path = convert_ogg_to_wav(temp_file.name)
+
+    # Initialize speech recognition
+    recognizer = sr.Recognizer()
+
+    try:
+        # Open the WAV file and recognize the speech
+        with sr.AudioFile(wav_file_path) as source:
+            audio_data = recognizer.record(source)
+            text = recognizer.recognize_google(audio_data)
+            await update.message.reply_text(f"Recognized Text: {text}")
+    except Exception as e:
+        await update.message.reply_text(f"Error recognizing audio: {e}")
+    finally:
+        # Clean up: remove temporary files
+        temp_file.close()
+        os.remove(temp_file.name)
+        os.remove(wav_file_path)
 
 # Helper to escape MarkdownV2 characters
 def escape_markdown_v2(text: str) -> str:
@@ -196,9 +241,9 @@ async def start_game_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
     # Check if the chat_id (group ID) is in the allowed list
     if chat_id not in ALLOWED_GROUP_IDS:
         try:
-            await update.message.reply_text("Due to the free service, you are not allowed to start a game in this group. Play there @iesp_0404 or contact @O000000000O00000000O")
+            await update.message.reply_text("Due to the free service, you are not allowed to start a game in this group. Play there https://t.me/+yVFKtplWZUA0Yzhl or contact @O000000000O00000000O")
         except telegram.error.BadRequest:
-            await update.message.chat.send_message("Due to the free service, you are not allowed to start a game in this group. Play there @iesp_0404 or contact @O000000000O00000000O")
+            await update.message.chat.send_message("Due to the free service, you are not allowed to start a game in this group. Play there https://t.me/+yVFKtplWZUA0Yzhl or contact @O000000000O00000000O")
         return
 
     if chat_id in octo_game_state:
@@ -570,6 +615,7 @@ def main():
     application.add_handler(CommandHandler('showallresults', show_all_results))
     application.add_handler(CommandHandler('myrank', my_rank))
     application.add_handler(CommandHandler('top10dumb', select_top_10_users))
+    application.add_handler(CommandHandler('translate', translate_voice_message))
 
 
     # Start the bot
