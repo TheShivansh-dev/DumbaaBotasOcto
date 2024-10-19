@@ -15,8 +15,8 @@ from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQu
 import openpyxl
 
 EXCEL_FILE = 'user_scores.xlsx'
-TOKEN: Final = '7007935023:AAENkGaklw6LMJA_sfhVZhnoAgIjW4lDTBc'
-BOT_USERNAME: Final = '@Grovieee_bot'
+TOKEN: Final = '7652253001:AAEipGC5Fb0Y04NgbCICb6N1Tm6HcJG4tpA'
+BOT_USERNAME: Final = '@Dumbaa_bot'
 ALLOWED_GROUP_IDS = [-1001817635995, -1002114430690]
 # Dictionary to keep track of ongoing games
 octo_game_state = {}
