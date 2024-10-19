@@ -14,9 +14,6 @@ from telegram import Update, InputFile, InlineKeyboardButton, InlineKeyboardMark
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
 import openpyxl
 
-from pydub import AudioSegment
-import tempfile
-
 EXCEL_FILE = 'user_scores.xlsx'
 TOKEN: Final = '7007935023:AAENkGaklw6LMJA_sfhVZhnoAgIjW4lDTBc'
 BOT_USERNAME: Final = '@Grovieee_bot'
