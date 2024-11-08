@@ -743,7 +743,7 @@ async def dumbi_difficulty_selection(update: Update, context: ContextTypes.DEFAU
     global OCTO_dumbi_FILE
     difficulty_message = ''
     if query.data == 'dumbi_difficulty_easy':
-        OCTO_dumbi_FILE = 'puzzl.xlsx'  # Use the easy file
+        OCTO_dumbi_FILE = 'easypuzzl2.xlsx'  # Use the easy file
         difficulty_message = "Easy mode selected"
     elif query.data == 'dumbi_difficulty_hard':
         OCTO_dumbi_FILE = 'puzzl.xlsx'  # Use the hard file
