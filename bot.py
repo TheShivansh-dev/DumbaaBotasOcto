@@ -398,7 +398,7 @@ async def process_game_round(update: Update, context: ContextTypes.DEFAULT_TYPE)
                     scrambled_word = ' '.join(random.sample(next_answer, len(next_answer)))
                     #masked_word = mask_word(next_word)  # Call to the mask_word function
 
-                    pass_button = InlineKeyboardButton(text="Hint 👾", callback_data="hint")
+                    pass_button = InlineKeyboardButton(text="Hint 🪸", callback_data="hint")
                     keyboard = InlineKeyboardMarkup([[pass_button]])
 
                     # Send the response with both the scrambled word and masked word
@@ -582,7 +582,7 @@ async def handle_pass_action(query, chat_id):
 
                 scrambled_word = ' '.join(random.sample(next_answer, len(next_answer)))
                 #masked_word = mask_word(next_word)
-                pass_button = InlineKeyboardButton(text="Hint 👾", callback_data="hint")
+                pass_button = InlineKeyboardButton(text="Hint 🪸", callback_data="hint")
                 keyboard = InlineKeyboardMarkup([[pass_button]])
 
                 await query.message.reply_text(
@@ -695,7 +695,7 @@ async def handle_hint_action(query, chat_id):
     current_word = game_state['current_word']
     scrambled_word = ' '.join(random.sample(current_word, len(current_word)))
     #masked_word = mask_word(next_word)
-    pass_button = InlineKeyboardButton(text="Another Hint 🐖", callback_data="another_hint")
+    pass_button = InlineKeyboardButton(text="Another Hint 😤", callback_data="another_hint")
     keyboard = InlineKeyboardMarkup([[pass_button]])
 
     await query.message.reply_text(
@@ -834,7 +834,7 @@ async def handle_dumbi_round_selection(update: Update, context: ContextTypes.DEF
         'current_game_score': 0,  # Initialize score for the current game
     }
 
-        pass_button = InlineKeyboardButton(text="Hint 👾", callback_data="hint")
+        pass_button = InlineKeyboardButton(text="Hint 🪸 ", callback_data="hint")
         keyboard = InlineKeyboardMarkup([[pass_button]])
 
         try:
