@@ -198,12 +198,14 @@ async def start_game_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
     global dumbai
     dumbai = "dumba"
     # Check if the chat_id (group ID) is in the allowed list
+    '''
     if chat_id not in ALLOWED_GROUP_IDS:
         try:
             await update.message.reply_text("Due to the free service, you are not allowed to start a game in this group. Play there https://t.me/+yVFKtplWZUA0Yzhl or contact @O000000000O00000000O")
         except telegram.error.BadRequest:
             await update.message.chat.send_message("Due to the free service, you are not allowed to start a game in this group. Play there https://t.me/+yVFKtplWZUA0Yzhl or contact @O000000000O00000000O")
         return
+    '''
 
     if chat_id in octo_game_state:
         try:
@@ -656,12 +658,14 @@ async def start_dumbii_command(update: Update, context: ContextTypes.DEFAULT_TYP
     global dumbai
     dumbai = "dumbii"
     # Check if the chat_id (group ID) is in the allowed list
+    '''
     if chat_id not in ALLOWED_GROUP_IDS:
         try:
             await update.message.reply_text("Due to the free service, you are not allowed to start a game in this group. Play there https://t.me/+yVFKtplWZUA0Yzhl or contact @O000000000O00000000O")
         except telegram.error.BadRequest:
             await update.message.chat.send_message("Due to the free service, you are not allowed to start a game in this group. Play there https://t.me/+yVFKtplWZUA0Yzhl or contact @O000000000O00000000O")
         return
+    '''
 
     if chat_id in octo_game_state:
         try:
