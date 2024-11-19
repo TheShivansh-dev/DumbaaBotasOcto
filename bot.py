@@ -747,7 +747,10 @@ async def dumbi_difficulty_selection(update: Update, context: ContextTypes.DEFAU
     global OCTO_dumbi_FILE
     difficulty_message = ''
     if query.data == 'dumbi_difficulty_easy':
-        OCTO_dumbi_FILE = 'easypuzzl2.xlsx'  # Use the easy file
+        excel_files = ['easypuzzl1.xlsx', 'easypuzzl2.xlsx']
+    
+    # Randomly select a file from the list
+        OCTO_dumbi_FILE = random.choice(excel_files)
         difficulty_message = "Easy mode selected"
     elif query.data == 'dumbi_difficulty_hard':
         OCTO_dumbi_FILE = 'puzzl.xlsx'  # Use the hard file
@@ -861,7 +864,31 @@ async def handle_dumbi_round_selection(update: Update, context: ContextTypes.DEF
     elif query.data == 'pass':
         # Handle the pass action
         await handle_pass_action(query, chat_id)
+#-----------------------------------download score table ---------------------------------------------
+async def download_scores_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    try:
+        chat_id = update.message.chat.id
+        
+        # Check if the chat_id (group ID) is in the allowed list
+    
+        if chat_id not in ALLOWED_GROUP_IDS:
+            try:
+                await update.message.reply_text("Due to the free service, you are not allowed to start a game in this group. Play there https://t.me/+yVFKtplWZUA0Yzhl or contact @O000000000O00000000O")
+            except telegram.error.BadRequest:
+                await update.message.chat.send_message("Due to the free service, you are not allowed to start a game in this group. Play there https://t.me/+yVFKtplWZUA0Yzhl or contact @O000000000O00000000O")
+            return
 
+        # Check if the file exists
+        if os.path.exists(EXCEL_FILE):
+            # Send the file to the user
+            with open(EXCEL_FILE, 'rb') as file:
+                await context.bot.send_document(chat_id=update.message.chat.id, document=file)
+        else:
+            # Notify the user that the file does not exist
+            await update.message.reply_text("Sorry, the score file is not available.")
+    except Exception as e:
+        # Handle any errors
+        await update.message.reply_text(f"An error occurred: {e}")
 #-------------------------------------------------Start Dumbi     ---------------------------------------------------------------
 def main():
     # Create the application
@@ -886,6 +913,8 @@ def main():
     application.add_handler(CommandHandler('showallresults', show_all_results))
     application.add_handler(CommandHandler('myrank', my_rank))
     application.add_handler(CommandHandler('top10dumb', select_top_10_users))
+
+    application.add_handler(CommandHandler('downloadscoreiesp', download_scores_command))
     
 
 
