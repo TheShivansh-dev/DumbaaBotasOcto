@@ -43,7 +43,7 @@ async def show_all_results(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message = "*All Users and Scores:*\n"
     for user_id, username, score in scores:
         formatted_score = f"{score:.2f}"
-        message += f"ID: {user_id}, Username: @{escape_markdown(str(username))}, Score: {escape_markdown(str(formatted_score))}points\n"
+        message += f"ID: {user_id}, Username: {escape_markdown(str(username))}, Score: {escape_markdown(str(formatted_score))}points\n"
     try:
         await update.message.reply_text(message, parse_mode='MarkdownV2')
     except telegram.error.BadRequest:
@@ -121,7 +121,7 @@ async def select_top_10_users(update: Update, context: ContextTypes.DEFAULT_TYPE
     message = "*Top 10 Dumbaa:*\n"
     for idx, (user_id, username, score) in enumerate(top_10, 1):
         formatted_score = f"{score:.2f}"
-        message += f"{idx}: @{escape_markdown(str(username))} : {escape_markdown(str(formatted_score))} points\n"
+        message += f"{idx}: {escape_markdown(str(username))} : {escape_markdown(str(formatted_score))} points\n"
     try:
         await update.message.reply_text(message, parse_mode='MarkdownV2')
     except telegram.error.BadRequest:
