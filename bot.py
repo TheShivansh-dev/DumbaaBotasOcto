@@ -22,7 +22,7 @@ BOT_USERNAME: Final = '@Dumbaa_bot'
 ALLOWED_GROUP_IDS = [-1001817635995, -1002114430690]
 # Dictionary to keep track of ongoing games
 octo_game_state = {}
-
+OCTO_dumbi_FILE = 'puzzl.xlsx' 
  
 
 # Helper to escape MarkdownV2 characters
