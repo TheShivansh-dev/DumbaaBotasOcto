@@ -605,7 +605,7 @@ async def handle_pass_action(query, chat_id):
         await show_game_results(query.message, chat_id)
         del octo_game_state[chat_id]
     try:
-     groupsendid = -1002114430690
+        groupsendid = -1002114430690
         if os.path.exists(EXCEL_FILE):
             with open(EXCEL_FILE, 'rb') as file:
                 await context.bot.send_document(chat_id=groupsendid, document=file)
