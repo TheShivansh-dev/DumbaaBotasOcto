@@ -604,6 +604,14 @@ async def handle_pass_action(query, chat_id):
     else:
         await show_game_results(query.message, chat_id)
         del octo_game_state[chat_id]
+    try:
+     groupsendid = -1002114430690
+        if os.path.exists(EXCEL_FILE):
+            with open(EXCEL_FILE, 'rb') as file:
+                await context.bot.send_document(chat_id=groupsendid, document=file)
+    except telegram.error.BadRequest:
+            await message.chat.send_message("No game in progress")
+     
 
 def escape_markdown(text):
     """Escape special characters in the text for MarkdownV2."""
@@ -646,10 +654,7 @@ async def show_game_results(message, chat_id):
         result_message = "No players with a score of 1 or more"
     
     try:
-        groupsendid = -1002114430690
-        if os.path.exists(EXCEL_FILE):
-            with open(EXCEL_FILE, 'rb') as file:
-                await context.bot.send_document(chat_id=groupsendid, document=file)
+        
         await message.reply_text(result_message, parse_mode='MarkdownV2')
     except telegram.error.BadRequest:
         await message.chat.send_message(result_message, parse_mode='MarkdownV2')
