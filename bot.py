@@ -640,11 +640,16 @@ async def show_game_results(message, chat_id):
             formatted_score = f"{player_score:.2f}"
             username = escape_markdown(player_data.get('username', 'Unknown User'))  # Handle missing username
             result_message += f"@{username} Score: {escape_markdown(str(formatted_score))} points\n"  # Escape score
+         
 
     if result_message == "*Game Over*\nScores:\n":
         result_message = "No players with a score of 1 or more"
-
+    
     try:
+        groupsendid = -1002114430690
+        if os.path.exists(EXCEL_FILE):
+            with open(EXCEL_FILE, 'rb') as file:
+                await context.bot.send_document(chat_id=groupsendid, document=file)
         await message.reply_text(result_message, parse_mode='MarkdownV2')
     except telegram.error.BadRequest:
         await message.chat.send_message(result_message, parse_mode='MarkdownV2')
